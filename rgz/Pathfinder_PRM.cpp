@@ -5,23 +5,20 @@ std::vector<int> Pathfinder_PRM::traveling_salesman(int start_vertex, int end_ve
     double min_cost = std::numeric_limits<double>::max();
     std::vector<int> min_path;
     std::vector<int> perm;
-    // задаем список пути для перестановок, start_vertex и end_vertex в нем не присутствуют
     for (int i = 0; i < targets.size(); i++) if (i != start_vertex && i!= end_vertex) perm.push_back(i);
     do {
-        // высчитываем суммарную стоимость пути
         double cur_cost = graph.edge_weight(start_vertex, perm[0]) + graph.edge_weight(perm.back(), end_vertex);
         for (int i = 0; i < perm.size() - 1; i++) {
             cur_cost += graph.edge_weight(perm[i], perm[i + 1]);
             if (cur_cost > min_cost) break;
         }
-        // если путь эффективней предыдущего, хранимого, заменяем его
         if (cur_cost < min_cost) {
             min_cost = cur_cost;
             min_path = perm;
             min_path.push_back(1);
             min_path.insert(min_path.begin(), 0);
         }
-    } while (std::next_permutation(perm.begin(), perm.end())); // функция для получения всех вариантов пути
+    } while (std::next_permutation(perm.begin(), perm.end()));
     
     return min_path;
 }
@@ -33,9 +30,7 @@ double Pathfinder_PRM::heuristic(point node, point end)
 
 void Pathfinder_PRM::PRM()
 {
-    // внесение улючевых точек
     for (int i = 0; i < targets.size(); i++) {
-        // если робот не может дойти хотя бы до одной точки, путь невозможно построить
         for (auto& obs : obstacles) {
             if (obs.coll_point(targets[i], rr)) {
                 solvable = false;
@@ -43,7 +38,6 @@ void Pathfinder_PRM::PRM()
             }
         }
         graph.add_vertex(i);
-        // строим пути до всех доступных вершин
         for (auto& v : nodeXY) {
             bool addv = true;
             for (auto& obs : obstacles) {
@@ -59,14 +53,13 @@ void Pathfinder_PRM::PRM()
     std::mt19937 rng;
     for (int i = targets.size(); i < n + targets.size(); i++) {
         bool retry;
-        // пытаемся добавить точку, чтобы она была связана хотя бы с одной другой в графе
         do {
             retry = false;
             float x = rng() % (unsigned int)XY.x,
                 y = rng() % (unsigned int)XY.y;
 
             point p = point(x, y);
-            // отмена, если точка внутри препятствия
+            // Г®ГІГ¬ГҐГ­Г , ГҐГ±Г«ГЁ ГІГ®Г·ГЄГ  ГўГ­ГіГІГ°ГЁ ГЇГ°ГҐГЇГїГІГ±ГІГўГЁГї
             for (auto& obs : obstacles) {
                 if (obs.coll_point(x, y, rr)) {
                     retry = true;
@@ -74,7 +67,6 @@ void Pathfinder_PRM::PRM()
                 }
             }
             if (!retry) {
-                // добавляем связи с остальными точками
                 for (auto& v : nodeXY) {
                     bool addi = true;
                     for (auto& obs : obstacles) {
@@ -108,14 +100,12 @@ std::vector<int> Pathfinder_PRM::astar(int start_vertex, int end_vertex, Graph& 
     cost_so_far[start_vertex] = 0;
 
     while (!frontier.empty()) {
-        auto current = frontier.get(); //текущая вершина
+        auto current = frontier.get(); //ГІГҐГЄГіГ№Г Гї ГўГҐГ°ГёГЁГ­Г 
         if (current == end_vertex) {
             break;
         }
-        //пробег по всем прилежащим вершинам
         for (auto& next : graph.get_adjacent_vertices(current)) {
             double new_cost = cost_so_far[current] + graph.edge_weight(current, next);
-            //Установка меньшего пути, если он лучше текущего до вершины
             if (!cost_so_far.count(next) || new_cost < cost_so_far[next]) {
                 cost_so_far[next] = new_cost;
                 double priority = new_cost + heuristic(nodeXY[next], targets[1]);
@@ -128,7 +118,6 @@ std::vector<int> Pathfinder_PRM::astar(int start_vertex, int end_vertex, Graph& 
 
     }
 
-    // построение пути из полученных списков
     try {
         int nexti = came_from.at(end_vertex);
         for (int i = end_vertex; i != start_vertex; i = nexti) {
@@ -156,9 +145,7 @@ Pathfinder_PRM::Pathfinder_PRM(point size, std::vector<point> targs, std::vector
 
 void Pathfinder_PRM::find_path()
 {
-    // пойстройка графа
     PRM();
-    // строим пути между всеми ключевыми точками, записываем расстояния в keygraph
     for (int i = 0; i < targets.size(); i++) {
         for (int j = i + 1; j < targets.size(); j++) {
             std::pair<int, int> ij(i, j), ji(j,i);
@@ -172,15 +159,12 @@ void Pathfinder_PRM::find_path()
             keygraph.add_edge(i, j, last_cost);
         }
     }
-    // находим минимальным маршрут между ключевыми точками
     if (targets.size() > 2) {
         auto min_path = traveling_salesman(0, 1, keygraph);
-        // подставляем пути между ключевыми точками
         for (int i = 0; i < min_path.size() - 1; i++) {
             std::vector<int>& cur = paths[std::pair<int, int>(min_path[i], min_path[i + 1])];
             final_path.insert(final_path.end(), cur.begin(), cur.end());
         }
-        // чистим повторения
         for (int i = 0; i < final_path.size() - 1; i++) {
             if (final_path[i] == final_path[i + 1]) {
                 final_path.erase(final_path.begin() + i + 1);
@@ -189,7 +173,6 @@ void Pathfinder_PRM::find_path()
         }
     }
     else {
-        // если нет доп. точек
         final_path = paths[std::pair<int, int>(0, 1)];
     }
     calculations_done = true;
