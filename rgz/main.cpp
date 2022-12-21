@@ -81,12 +81,12 @@ void load_data(std::istream& fin, float &robotRadius,
 
 
 int main() {
-    //===  РЕГУЛИРУЕМЫЕ ПАРАМЕТРЫ ===
-    // размер окна приложения
+    //===  CHANGEABLE PARAMETERS ===
+    // Program window size
     const float X = 800, Y = 600;
-    // количство точек при построении PRM
+    // the number of points in the construction PRM
     int n = 300;
-    // максимальное количество попыток построить PRM, для которого возможно найти путь
+    // the maximum number of attempts to build a PRM for which it is possible to find a path
     int maxiter = 100;
     //===============================
 
@@ -103,11 +103,9 @@ int main() {
     std::map<int, point> nodeXY;
     Graph g;
     
-    //Сглаживание
     ContextSettings settings;
     settings.antialiasingLevel = 5;
    
-    // Инициализация окна приложения
     RenderWindow window(VideoMode(X, Y), "PathFinder",Style::Default,settings);
     
     Text mainText;
@@ -121,23 +119,22 @@ int main() {
     mainText.setPosition(10.f, 5.f);
     mainText.setFillColor(Color::Black);
 
-   // главный цикл
    while (window.isOpen())
    {
        Event event;
        int mouseX = sf::Mouse::getPosition(window).x,
            mouseY = sf::Mouse::getPosition(window).y;
        while (window.pollEvent(event)) {
-           //Закрытие окна при нажатии на крестик
+           //Closing the window when clicking on the cross
            if (event.type == Event::Closed) window.close();
 
-           //Движение робота по пути при нажатии стрелок влево и вправо, если вычисления выполнены
+           //The robot moves along the path when the left and right arrows are pressed, if the calculations are performed
            if (event.type == Event::KeyPressed && event.key.code == Keyboard::Right && ttime < path.size() - 1 && calculations_done)
                ttime += 1;
            if (event.type == Event::KeyPressed && event.key.code == Keyboard::Left && ttime > 0 && calculations_done)
                ttime -= 1;
 
-           //Сохранение сцены в файл при нажатии "S", если вычисления выполнены
+           //Saving a scene to a file when pressing "S" if calculations are performed
            if (event.type == Event::KeyPressed && event.key.code == Keyboard::S && calculations_done) {
                ofstream fout;
                fout.open("SavedScene.txt");
@@ -148,7 +145,7 @@ int main() {
                }
            }
 
-           //Загрузка при нажатии "L", если не были введены данные
+           //Loading when pressing "L" if no data has been entered
            if (event.type == Event::KeyPressed && event.key.code == Keyboard::L && inputCounter == 0) {
                ifstream fin("SavedScene.txt");
                if (fin.is_open()) {
@@ -162,7 +159,7 @@ int main() {
                else mainText.setString("File could not be opened. Click to set robot position.");
            }
            
-           //Ввод данных с помощью мыши
+           //Entering data with the mouse
            if (event.type == Event::MouseButtonPressed && !calculations_done) {
                
                switch (inputCounter) {
@@ -204,7 +201,7 @@ int main() {
 
            }
            
-           //Запуск вычислений или переключение на расстановку доп. точек
+           //Starting calculations or switching to the placement of additional points
            if (event.type == Event::KeyPressed && event.key.code == Keyboard::Enter
                && inputCounter > 2 && inputCounter % 2 == 1 && !calculations_done) {
                if (!obstacles_set) {
@@ -236,9 +233,9 @@ int main() {
                
            }
        }
-       window.clear(Color(255, 250, 250)); //заливка фоном
+       window.clear(Color(255, 250, 250));
 
-       //отрисовка графа
+       //drawing a graph
        if (calculations_done) {
            for (auto v : g.get_vertices()) {
                for (auto e : g.get_adjacent_edges(v)) {
@@ -251,10 +248,10 @@ int main() {
            }
        }
 
-       //отрисовка робота
+       //drawing a robot
        if (inputCounter > 0) {
 
-           //отрисовка радиуса в реальном времени при вводе (далее ОРВРР)
+           //real-time drawing the robot radius when entering
            if (inputCounter == 1) {
                robot_radius = sqrt(pow(targets[0].x - mouseX, 2) + pow(targets[0].y - mouseY, 2));
            }
@@ -273,7 +270,7 @@ int main() {
 
        }
 
-       //отрисовка препятствий
+       //drawing obstacles
        if (inputCounter > 2) { 
            for (int i = 0; i < obstacles.size(); ++i) {
                CircleShape cwall(obstacles[i].r);
@@ -282,7 +279,6 @@ int main() {
                cwall.setPosition(obstacles[i].x, obstacles[i].y);
                window.draw(cwall);
            }
-           //ОРВРР при вводе для препятсвий
            if (inputCounter % 2 == 0 && !obstacles_set) {
                CircleObst& obs = obstacles.back();
                float curr = sqrt(pow(obs.x - mouseX, 2) + pow(obs.y-mouseY, 2));
@@ -294,7 +290,7 @@ int main() {
            }
        }
 
-       // отрисовка доп. точек
+       // drawing additional points
        if (obstacles_set) {
            for (int i = 2; i < targets.size(); i++) {
                CircleShape p(5.f);
@@ -305,7 +301,7 @@ int main() {
            }
        }
 
-       //отрисовка пути
+       //drawing a path
        if (calculations_done) { 
            for (int i = 0; i < path.size() - 1; ++i) {
                int cur = path.at(i);
@@ -318,7 +314,7 @@ int main() {
            }
        }
 
-       //отрисовка цели
+       //drawing a goal
        if (inputCounter > 2) { 
            CircleShape goal(5.f);
            goal.setOrigin(5.f, 5.f);
@@ -327,7 +323,7 @@ int main() {
            window.draw(goal);
        }
 
-       // отображение отрисованного окна
+       // showing a drawn window
        window.draw(mainText);
         window.display();
     }
